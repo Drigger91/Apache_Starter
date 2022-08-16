@@ -30,22 +30,7 @@ public class ApacheClient {
         HttpClientBuilder builder = HttpClients.custom().setDefaultHeaders(list).setDefaultRequestConfig(config);
         return builder.build();
     }
-    public HttpClient getClientForGetRequest(String uri) {
-        HttpClient client = getClient();
-        HttpGet getRequest = getGetRequest(uri);
-        return client;
-    }
-    public HttpClient getClientForPostRequest() {
-        HttpClient client = getClient();
-        HttpPost postRequest = getPostRequest("www.example.com");
-        return client;
-    }
-    private HttpPost getPostRequest(String url){
-        return new HttpPost(url);
-    }
-    private HttpGet getGetRequest(String url){
-        return new HttpGet(url);
-    }
+
 
 
 }
