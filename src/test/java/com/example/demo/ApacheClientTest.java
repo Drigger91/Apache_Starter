@@ -19,6 +19,9 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.Mockito.when;
+
+
 
 public class ApacheClientTest {
 
