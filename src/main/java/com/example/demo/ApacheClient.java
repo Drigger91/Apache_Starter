@@ -64,5 +64,9 @@ public class ApacheClient {
     private String ToString(Integer i){
         return i.toString();
     }
+    private HttpRequest addToken(HttpRequest req , String token){
+        req.addHeader(HttpHeaders.AUTHORIZATION,token);
+        return req;
+    }
 
 }
