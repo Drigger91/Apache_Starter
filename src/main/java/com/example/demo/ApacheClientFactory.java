@@ -42,6 +42,7 @@ public class ApacheClientFactory {
                 .setDefaultHeaders(list)
                 .addInterceptorLast(requestInterceptor)
                 .addInterceptorLast(responseInterceptor)
+                .addInterceptorLast(getResponseInterceptors().get(0))
                 .setDefaultRequestConfig(config);
         return builder.build();
     }
@@ -53,7 +54,7 @@ public class ApacheClientFactory {
         HttpResponseInterceptor responseInterceptor = ResponseLogger();
         RequestConfig config =  RequestConfig.custom().setConnectTimeout(3000).build();
         List<HttpRequestInterceptor> requestInterceptors = new ArrayList<>(getRequestInterceptors(auth));
-        List<HttpResponseInterceptor> responseInterceptors = new ArrayList<>(getResponseInterceptors(auth));
+        List<HttpResponseInterceptor> responseInterceptors = new ArrayList<>(getResponseInterceptors());
         requestInterceptors.add(requestInterceptor);
         responseInterceptors.add(responseInterceptor);
         builder = HttpClients.custom()
@@ -75,7 +76,7 @@ public class ApacheClientFactory {
             }
         });
     }
-    private List<HttpResponseInterceptor> getResponseInterceptors(String auth){
+    private List<HttpResponseInterceptor> getResponseInterceptors(){
         return List.of(new HttpResponseInterceptor() {
             @Override
             public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
@@ -112,12 +113,6 @@ public class ApacheClientFactory {
                 }catch(Exception e){
                     log.info(httpResponse + e.getMessage());
                 }
-                if(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED){
-                    throw new InvalidSession("Not Authorised!");
-                }
-                if(httpResponse.getStatusLine().getStatusCode() >=400 && httpResponse.getStatusLine().getStatusCode() < 600){
-                    throw new ApiCallFailure(ToString(httpResponse.getStatusLine().getStatusCode()));
-                }
             }
         };
     }
@@ -132,6 +127,4 @@ public class ApacheClientFactory {
             throw new SigningException(e.getMessage());
         }
     }
-
-
 }
