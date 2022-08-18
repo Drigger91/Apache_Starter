@@ -1,9 +1,14 @@
 package com.example.demo;
 
+import com.example.demo.exceptions.ApiCallFailure;
+import com.example.demo.exceptions.ApiCallTimeout;
+import com.sun.net.httpserver.Headers;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.*;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
@@ -19,26 +24,24 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
-
-
-
+@Slf4j
 public class ApacheClientTest {
 
     @Autowired
     private final ApacheClient ac = new ApacheClient();
+
 
     @Test
     void GetRequestCheck() throws IOException, URISyntaxException {
         CloseableHttpClient getRequestAc = ac.getClient();
         String uri = String.valueOf(new URIBuilder("https://jsonplaceholder.typicode.com/posts"));
         HttpUriRequest req = new HttpGet(uri);
-        CloseableHttpResponse res = getRequestAc.execute(req);
+        req.addHeader(HttpHeaders.AUTHORIZATION,"blaah");
+        HttpResponse res = getRequestAc.execute(req);
         StatusLine status = res.getStatusLine();
         String body = EntityUtils.toString(res.getEntity());
-        System.out.println("body is"+body);
         getRequestAc.close();
-        System.out.println("URi is  "+uri);
+        log.info("Body is : "+body);
         Assertions.assertEquals(true,status.toString().contains("OK"));
 
     }
@@ -52,8 +55,15 @@ public class ApacheClientTest {
         HttpEntity entity = new UrlEncodedFormEntity(list);
         req.setEntity(entity); //set body
         System.out.println("entity : " + entity);
+        HttpResponse res;
         CloseableHttpClient client = ac.getClient();
-        HttpResponse res = client.execute(req);
+        try{
+            res = client.execute(req);
+        }
+        catch (ApiCallFailure e){
+            throw new ApiCallTimeout(e.getMessage());
+        }
+        client.close();
         Assertions.assertEquals(true,res.toString().contains("OK"));
 
     }
