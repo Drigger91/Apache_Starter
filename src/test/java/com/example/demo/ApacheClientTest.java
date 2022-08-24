@@ -2,15 +2,18 @@ package com.example.demo;
 
 import com.example.demo.exceptions.ApiCallFailure;
 import com.example.demo.exceptions.ApiCallTimeout;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -26,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -60,7 +64,12 @@ public class ApacheClientTest {
         list.add(new BasicNameValuePair("username","piyush91"));
         list.add(new BasicNameValuePair("email","piyush@piyush999.com"));
         list.add(new BasicNameValuePair("password","piyush91"));
-        HttpEntity entity = new StringEntity(list.toString());
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode node = mapper.createObjectNode();
+        list.forEach(pair ->{
+            node.put(pair.getName(),pair.getValue());
+        });
+        StringEntity entity = new StringEntity(node.toString(), ContentType.APPLICATION_JSON);
         req.setEntity(entity); //set body
         ls.forEach(header -> req.setHeader(header.getName(), header.getValue()));
         System.out.println("entity : " + entity);
@@ -69,7 +78,7 @@ public class ApacheClientTest {
 
         String s = EntityUtils.toString(res.getEntity());
         log.info("HAHAHA" + s);
-        assertEquals(true,s.contains("pass"));
+        assertEquals(true , s.contains("password"));
 
     }
     @Test
