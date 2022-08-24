@@ -11,17 +11,20 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 @Slf4j
 public class ApacheClientFactory {
 
-    private HttpClientBuilder builder;
+    private  HttpClientBuilder builder;
 
     public CloseableHttpClient getInstance(){
         List<Header> list = new ArrayList<>();
@@ -30,20 +33,16 @@ public class ApacheClientFactory {
         builder = HttpClients.custom()
                 .setDefaultHeaders(list)
                 .setDefaultRequestConfig(config);
+        getResponseInterceptors().forEach(builder::addInterceptorLast);
         return builder.build();
     }
     public CloseableHttpClient getInstanceWithFilters() {
-        List<Header> list = new ArrayList<>();
-        list.add(new BasicHeader(HttpHeaders.CONTENT_TYPE,"application/json"));
         HttpRequestInterceptor requestInterceptor = RequestLogger();
         HttpResponseInterceptor responseInterceptor = ResponseLogger();
-        RequestConfig config =  RequestConfig.custom().setConnectTimeout(3000).build();
+        RequestConfig config =  RequestConfig.custom().build();
         builder = HttpClients.custom()
-                .setDefaultHeaders(list)
-                .addInterceptorLast(requestInterceptor)
-                .addInterceptorLast(responseInterceptor)
-                .addInterceptorLast(getResponseInterceptors().get(0))
                 .setDefaultRequestConfig(config);
+        getResponseInterceptors().forEach(builder::addInterceptorLast);
         return builder.build();
     }
     public HttpClient getInstanceWithAuthFilters(String auth){
@@ -52,7 +51,7 @@ public class ApacheClientFactory {
         list.add(ContentHeader);
         HttpRequestInterceptor requestInterceptor = RequestLogger();
         HttpResponseInterceptor responseInterceptor = ResponseLogger();
-        RequestConfig config =  RequestConfig.custom().setConnectTimeout(3000).build();
+        RequestConfig config =  RequestConfig.custom().setConnectTimeout(30000).build();
         List<HttpRequestInterceptor> requestInterceptors = new ArrayList<>(getRequestInterceptors(auth));
         List<HttpResponseInterceptor> responseInterceptors = new ArrayList<>(getResponseInterceptors());
         requestInterceptors.add(requestInterceptor);
@@ -60,7 +59,7 @@ public class ApacheClientFactory {
         builder = HttpClients.custom()
                 .setDefaultHeaders(list)
                 .setDefaultRequestConfig(config);
-        responseInterceptors.forEach(builder::addInterceptorLast);
+        responseInterceptors.forEach(builder::addInterceptorFirst);
         requestInterceptors.forEach(builder::addInterceptorLast);
         return builder.build();
     }
@@ -80,15 +79,21 @@ public class ApacheClientFactory {
         return List.of(new HttpResponseInterceptor() {
             @Override
             public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+               //log.info("SADASDSADA {}", httpResponse.getStatusLine().getStatusCode() +EntityUtils.toString(httpResponse.getEntity()));
                 if(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED){
                     throw new InvalidSession();
                 }
-                if(httpResponse.getStatusLine().getStatusCode() > 400 && httpResponse.getStatusLine().getStatusCode() < 600){
-                    throw new ApiCallFailure((HttpStatus) httpResponse.getStatusLine(),httpResponse.toString().getBytes());
+                if(httpResponse.getStatusLine().getStatusCode() > 400 && httpResponse.getStatusLine().getStatusCode() < 600) {
+                    throw new ApiCallFailure("hii" + EntityUtils.toString(httpResponse.getEntity()));
                 }
             }
         });
     }
+
+    private String STOI(Integer statusCode) {
+        return statusCode.toString();
+    }
+
     private HttpRequestInterceptor RequestLogger() {
         return new HttpRequestInterceptor() {
             @Override
@@ -109,16 +114,12 @@ public class ApacheClientFactory {
             @Override
             public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
                 try{
-                    log.info(Arrays.toString(httpResponse.getAllHeaders()) + httpResponse.getStatusLine().getStatusCode());
+                    log.info(""+httpResponse.getStatusLine().getStatusCode());
                 }catch(Exception e){
                     log.info(httpResponse + e.getMessage());
                 }
             }
         };
-    }
-
-    private String ToString(Integer i){
-        return i.toString();
     }
     private void addToken(HttpRequest req , String token){
         try{

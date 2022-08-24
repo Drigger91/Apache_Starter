@@ -6,11 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.junit.jupiter.api.Test;
@@ -18,7 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,24 +53,23 @@ public class ApacheClientTest {
     }
     @Test
     void postRequestCheck() throws IOException {
-        HttpPost req = new HttpPost("https://www.example.com");
+        HttpPost req = new HttpPost("https://jsonplaceholder.typicode.com/posts");
         List<NameValuePair> list = new ArrayList<>();
+        List<NameValuePair> ls = new ArrayList<>();
+        ls.add(new BasicHeader("aasdasdasdasd","asdadadsadsadadada"));
         list.add(new BasicNameValuePair("username","piyush91"));
         list.add(new BasicNameValuePair("email","piyush@piyush999.com"));
         list.add(new BasicNameValuePair("password","piyush91"));
-        HttpEntity entity = new UrlEncodedFormEntity(list);
+        HttpEntity entity = new StringEntity(list.toString());
         req.setEntity(entity); //set body
+        ls.forEach(header -> req.setHeader(header.getName(), header.getValue()));
         System.out.println("entity : " + entity);
-        HttpResponse res;
         CloseableHttpClient client = ac.getInstanceWithFilters();
-        try{
-            res = client.execute(req);
-        }
-        catch (ApiCallFailure e){
-            throw new ApiCallTimeout(e.getMessage());
-        }
-        client.close();
-        assertEquals(true,res.toString().contains("OK"));
+        var res = client.execute(req);
+
+        String s = EntityUtils.toString(res.getEntity());
+        log.info("HAHAHA" + s);
+        assertEquals(true,s.contains("pass"));
 
     }
     @Test
